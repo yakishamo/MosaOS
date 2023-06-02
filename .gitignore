@@ -1,0 +1,7 @@
+*.elf
+*.o
+*.efi
+*.map
+tool
+fs
+
