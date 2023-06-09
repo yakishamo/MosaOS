@@ -9,9 +9,14 @@ void stop() {
 
 uint64_t *update_start_addr(uint64_t *start_addr) {
 	Elf64_Ehdr *elf_header = (Elf64_Ehdr *)start_addr;
+	uintptr_t entry_point = elf_header->e_entry;
+	Print(L"[LOG] e_entry : %p\n", entry_point);
 	Elf64_Shdr *section_header = (Elf64_Shdr *)((char *)elf_header + 
 			elf_header->e_shoff);
-	return (uint64_t *)((char*)start_addr + (int)section_header[1].sh_offset);
+	Print(L"[LOG] sh_addr : %lx\n", section_header[2].sh_addr);
+	uint64_t updated = (uint64_t)((uintptr_t)start_addr + (uintptr_t)entry_point - (int)section_header[2].sh_addr + (int)section_header[2].sh_offset);
+	Print(L"[LOG] updated : %lx\n", updated);
+	return (uint64_t*)updated;
 }
 
 EFI_STATUS
