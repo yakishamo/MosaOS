@@ -2,6 +2,7 @@ TARGET = kernel.elf
 CFLAGS += -g -O0 \
 					-Wall -Wextra -Wno-unused-parameter \
 					-I$(HOME)/x86_64-elf/include \
+					-I./ \
 					-fPIE \
 					-fno-builtin -fno-common -fno-stack-protector \
 					-nostdlib -nostdinc \
@@ -9,8 +10,9 @@ CFLAGS += -g -O0 \
 
 CPPFLAGS = -g -O0 \
 					 -Wall -Wextra -Wno-unused-parameter \
-					 -I$(HOME)/x86_64-elf/include \
 					 -I$(HOME)/x86_64-elf/include/c++/v1 \
+					 -I$(HOME)/x86_64-elf/include \
+					 -I./ \
 					 -nostdinc -nostdlib \
 					 -fPIE \
 					 -fno-builtin -fno-common -fno-stack-protector \

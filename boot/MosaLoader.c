@@ -21,6 +21,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	struct bootinfo_t bootinfo;
 	EFI_STATUS status;
 
+	Print(L"[log]Start MosaLoader.\n");
 	//get gop
 	EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 	EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = NULL;
@@ -85,25 +86,40 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	uint64_t *start_addr = KERNEL_START_QEMU;
 	gBS->CopyMem(start_addr, kernel_program, file_size);
 	uint64_t *updated_start_addr = update_start_addr(start_addr);
-
+	
+	Print(L"exit uefi\n");
 	//exit uefi
 	UINTN mmapsize = 0, mapkey, descsize;
 	UINT32 descver;
 	EFI_MEMORY_DESCRIPTOR *mmap = NULL;
-	status = gBS->GetMemoryMap(&mmapsize, mmap, &mapkey, &descsize, &descver);
-	while(status == EFI_BUFFER_TOO_SMALL) {
-		if(mmap) {
-			gBS->FreePool(mmap);
-		}
-		mmapsize += 0x1000;
-		status = gBS->AllocatePool(EfiLoaderData, mmapsize, (void **)&mmap);
+	
+	do {
+		Print(L"[LOG] mmapsize :  %lx\n", mmapsize);
 		status = gBS->GetMemoryMap(&mmapsize, mmap, &mapkey, &descsize, &descver);
-	}
-	status = gBS->ExitBootServices(ImageHandle, mapkey);
+		if(EFI_ERROR(status)) {
+			if(mmap) {
+				gBS->FreePool(mmap);
+			}
+			mmapsize += 0x1000;
+			do {
+				status = gBS->AllocatePool(EfiLoaderData, mmapsize, (void **)&mmap);
+				if(EFI_ERROR(status)) {
+					Print(L"[ERROR] AllocatePool failed.\n");
+					Print(L"[ERROR] mmapsize : %lx\n", mmapsize);
+				} 
+			} while(EFI_ERROR(status));
+		} else continue;
+	} while(EFI_ERROR(status));
+
+	gBS->ExitBootServices(ImageHandle, mapkey);
 	if(EFI_ERROR(status)) {
-		Print(L"[error]exit boot service failed.");
+		Print(L"[ERROR]exit boot service failed.\n");
+		Print(L"[ERROR]status = %lx\n", status);
 		stop();
 	}
+
+	Print(L"[log]jump_to_kernel\n");
 	jump_to_kernel(&bootinfo, updated_start_addr);
-	return status; //意味はない
+	return status; //jump_to_kernelから処理は返ってこないので意味はないが
+								 //return文がないとコンパイルエラーが出るため記述
 }
