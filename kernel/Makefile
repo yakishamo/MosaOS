@@ -21,7 +21,7 @@ CPPFLAGS = -g -O0 \
 LDFLAGS = -Map kernel.map -e entry_point -z norelro --image-base 0x100000 -static\
 					-L$(HOME)/x86_64-elf/lib/ -lc -lc++
 
-OBJS = kernel.o
+OBJS = kernel.o font.o screen.o new.o
 
 .PHONY: clean
 
