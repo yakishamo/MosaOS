@@ -1,5 +1,6 @@
 #include "MosaLoader.h"
 #include "elf.h"
+#include <Library/BaseMemoryLib.h>
 #include <Uefi.h>
 
 
@@ -9,13 +10,9 @@ void stop() {
 
 uint64_t *update_start_addr(uint64_t *start_addr) {
 	Elf64_Ehdr *elf_header = (Elf64_Ehdr *)start_addr;
-	uintptr_t entry_point = elf_header->e_entry;
-	Print(L"[LOG] e_entry : %p\n", entry_point);
 	Elf64_Shdr *section_header = (Elf64_Shdr *)((char *)elf_header + 
 			elf_header->e_shoff);
-	Print(L"[LOG] sh_addr : %lx\n", section_header[2].sh_addr);
-	uint64_t updated = (uint64_t)((uintptr_t)start_addr + (uintptr_t)entry_point - (int)section_header[2].sh_addr + (int)section_header[2].sh_offset);
-	Print(L"[LOG] updated : %lx\n", updated);
+	uint64_t updated = (uint64_t)((uintptr_t)start_addr + (uintptr_t)section_header[3].sh_offset);
 	return (uint64_t*)updated;
 }
 
@@ -79,18 +76,34 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		Print(L"[error]getting kernel file info failed.");
 		stop();
 	}
-	UINTN file_size = file_info.FileSize;
+	UINTN kernel_file_size = file_info.FileSize;
 
 	uint64_t *kernel_program = NULL;
-	status = kernel_file->Read(kernel_file, &file_size, kernel_program);
+	status = gBS->AllocatePool(EfiBootServicesData, kernel_file_size, (void **)&kernel_program);
+	status = kernel_file->Read(kernel_file, &kernel_file_size, kernel_program);
 	if(EFI_ERROR(status)) {
 		Print(L"[error]read kernel failed.");
 		stop();
 	}
 
 	uint64_t *start_addr = KERNEL_START_QEMU;
-	gBS->CopyMem(start_addr, kernel_program, file_size);
+	status = gBS->AllocatePages(AllocateAddress, EfiBootServicesData,
+			(kernel_file_size+0xfff)/0x1000,
+			(EFI_PHYSICAL_ADDRESS*)&start_addr);
+	if(EFI_ERROR(status)) {
+		Print(L"[ERROR] %d:failed AllocatePool for kernel.\n",__LINE__);
+		stop();
+	}
+
+	Print(L"[LOG] start_addr : %lx\n", start_addr);
+	Print(L"[LOG] kernel_program : %lx\n", kernel_program);
+	gBS->CopyMem(start_addr, kernel_program, kernel_file_size);
+	Print(L"[LOG] kernel_file_size : %d\n", kernel_file_size);
+	Print(L"[LOG] KERNEL_START_QEMU : %lx\n", KERNEL_START_QEMU);
+	Print(L"[LOG] start_addr : %lx\n", start_addr);
 	uint64_t *updated_start_addr = update_start_addr(start_addr);
+	Print(L"[LOG] updated_start_addr : %lx\n", updated_start_addr);
+	Print(L"[LOG] *updated_start_addr : %lx\n", *updated_start_addr);
 	
 	Print(L"exit uefi\n");
 	//exit uefi
@@ -111,7 +124,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 				if(EFI_ERROR(status)) {
 					Print(L"[ERROR] AllocatePool failed.\n");
 					Print(L"[ERROR] mmapsize : %lx\n", mmapsize);
-				} 
+				}
 			} while(EFI_ERROR(status));
 		} else continue;
 	} while(EFI_ERROR(status));

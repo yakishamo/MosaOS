@@ -1,3 +1,6 @@
+#ifndef STDDEF_H
+#define STDDEF_H
+
 #ifndef _SIZE_T
 #define _SIZE_T
 typedef __SIZE_TYPE__ size_t;
@@ -21,3 +24,6 @@ typedef __WCHAR_TYPE__ wchar_t;
 									($reinterpret_cast<const volatile char*&> \
 									 (static_cast<type*>(0)->member) ) ) )
 
+typedef wchar_t wint_t;
+
+#endif /* STDDEF_H */

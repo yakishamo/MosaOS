@@ -12,6 +12,8 @@ typedef struct {
 	uint8_t res;
 } __attribute__((packed)) Color_t;
 
+typedef void (*WritePixel_t)(uint32_t x, uint32_t y, Color_t c);
+
 class ScreenManager {
 	public:
 		ScreenManager();
@@ -26,11 +28,13 @@ class ScreenManager {
 class Screen {
 	public:
 		Screen();
-		Screen(video_info_t vinfo);
+		Screen(video_info_t vinfo, const char *name);
 		Screen *setNext(Screen *next);
 		Screen *getNext();
-		void writePixel(uint32_t x, uint32_t y, Color_t c);
+		char *setName(const char *str);
+		char *getName();
 	private:
+		char name[100];
 		uint64_t *fb;
 		uint64_t fb_size;
 		uint32_t x_axis;
@@ -38,3 +42,5 @@ class Screen {
 		uint32_t ppsl;
 		Screen *next;
 };
+
+ScreenManager *InitializeScreen(video_info_t vinfo);

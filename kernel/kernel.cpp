@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include "../boot/boot_types.h"
 #include "kernel.hpp"
+#include "font.hpp"
+#include "screen.hpp"
 
 video_info_t *vinfo;
 
@@ -12,6 +14,8 @@ extern "C" void entry_point(bootinfo_t *binfo) {
 	uint32_t ppsl = binfo->vinfo.ppsl;
 	pix_format *fb = (pix_format*)binfo->vinfo.fb;
 
+	ScreenManager *screen_manager = InitializeScreen(*vinfo);
+	//Screen *frame = screen_manager->getScreen(0);
 	for(uint32_t i = 0; i < y_axis; i++) {
 		for(uint32_t j = 0; j < x_axis; j++) {
 			pix_format bgr = {

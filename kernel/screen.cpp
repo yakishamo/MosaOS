@@ -1,7 +1,8 @@
 #include "screen.hpp"
-#include "../boot/boot_types.h"
-#include <stddef.h>
 #include "new.hpp"
+#include "../boot/boot_types.h"
+#include <cstddef>
+#include <cstring>
 
 ScreenManager::ScreenManager() {
 	screens = NULL;
@@ -56,13 +57,14 @@ Screen::Screen() {
 	next = NULL;
 }
 
-Screen::Screen(video_info_t vinfo) {
+Screen::Screen(video_info_t vinfo, const char *name) {
 	fb = vinfo.fb;
 	fb_size = vinfo.fb_size;
 	x_axis = vinfo.x_axis;
 	y_axis = vinfo.y_axis;
 	ppsl = vinfo.ppsl;
 	next = NULL;
+	setName(name);
 }
 
 Screen *Screen::setNext(Screen *next) {
@@ -74,12 +76,30 @@ Screen *Screen::getNext() {
 	return this->next;
 }
 
+char *Screen::setName(const char *str) {
+	strncpy(name, str, 99);
+	name[99] = '\0';
+	return name;
+}
+
+char *Screen::getName() {
+	return name;
+}
+
 ScreenManager screen_manager_buf;
-Screen screen_buf;
+Screen framebuffer_buf, backbuffer_buf;
+uint64_t back_fb[2116800];
 
 ScreenManager *InitializeScreen(video_info_t vinfo) {
+	while(1) __asm__("hlt");
 	ScreenManager *screen_manager = new(&screen_manager_buf) ScreenManager(
-			new(&screen_buf) Screen(vinfo));
+			new(&framebuffer_buf) Screen(vinfo, "FrameBuffer"));
+	
+	video_info_t back_info;
+	memcpy(&back_info, &vinfo, sizeof(video_info_t));
+	back_info.fb = back_fb;
+	Screen *back_buffer = new(&backbuffer_buf) Screen(back_info, "BackBuffer");
+	screen_manager->setScreen(back_buffer);
 	return screen_manager;
 }
 
