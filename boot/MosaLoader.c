@@ -4,7 +4,7 @@
 #include <Uefi.h>
 
 void stop() {
-	while(1) __asm__("hlt");
+	while(2) __asm__("hlt");
 }
 
 int strcmp(const char *first, const char *second) {
@@ -96,11 +96,13 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	}
 
 	//get info from gop
-	bootinfo.vinfo.fb = (uint64_t*)gop->Mode->FrameBufferBase;
+	bootinfo.vinfo.fb = (uint32_t*)gop->Mode->FrameBufferBase;
 	bootinfo.vinfo.fb_size = (uint64_t)gop->Mode->FrameBufferSize;
 	bootinfo.vinfo.x_axis = (uint32_t)gop->Mode->Info->HorizontalResolution;
 	bootinfo.vinfo.y_axis = (uint32_t)gop->Mode->Info->VerticalResolution;
 	bootinfo.vinfo.ppsl = (uint32_t)gop->Mode->Info->PixelsPerScanLine;
+	Print(L"[LOG] x_axis : %d\n", bootinfo.vinfo.x_axis);
+	Print(L"[LOG] y_axis : %d\n", bootinfo.vinfo.y_axis);
 
 	//get sfsp
 	EFI_GUID sfsp_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;

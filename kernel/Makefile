@@ -1,5 +1,5 @@
 TARGET = kernel.elf
-CFLAGS += -g -O2 \
+CFLAGS += -g -O0 \
 					-Wall -Wextra -Wno-unused-parameter \
 					-I$(HOME)/x86_64-elf/include \
 					-I./ \
@@ -8,7 +8,7 @@ CFLAGS += -g -O2 \
 					-nostdlib -nostdinc \
 					-mno-red-zone
 
-CPPFLAGS = -g -O2 \
+CPPFLAGS = -g -O0 \
 					 -Wall -Wextra -Wno-unused-parameter \
 					 -I$(HOME)/x86_64-elf/include/c++/v1 \
 					 -I$(HOME)/x86_64-elf/include \

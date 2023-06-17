@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 typedef struct video_info_t {
-	uint64_t *fb;
+	uint32_t *fb;
 	uint64_t fb_size;
 	uint32_t x_axis;
 	uint32_t y_axis;

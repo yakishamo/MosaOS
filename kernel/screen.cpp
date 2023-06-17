@@ -27,7 +27,7 @@ Screen *ScreenManager::getScreen(int index) {
 }
 
 Screen *ScreenManager::setScreen(Screen *s) {
-	Screen *ptr = getLast();
+	Screen *ptr = this->getLast();
 	if(ptr == NULL) {
 		screens = s;
 		return s;
@@ -38,8 +38,11 @@ Screen *ScreenManager::setScreen(Screen *s) {
 }
 
 Screen *ScreenManager::getLast() {
-	if(screens->getNext() == NULL) {
+	if(screens == NULL) {
 		return NULL;
+	}
+	if(screens->getNext() == NULL) {
+		return screens;
 	}
 	Screen *ptr = screens;
 	while(ptr->getNext() != NULL) {
@@ -57,13 +60,13 @@ Screen::Screen() {
 	next = NULL;
 }
 
-Screen::Screen(video_info_t vinfo, const char *name) {
-	while(1)__asm__("hlt");
-	fb = vinfo.fb;
-	fb_size = vinfo.fb_size;
-	x_axis = vinfo.x_axis;
-	y_axis = vinfo.y_axis;
-	ppsl = vinfo.ppsl;
+// ***Screen***
+Screen::Screen(const video_info_t *vinfo, const char *name) {
+	fb = vinfo->fb;
+	fb_size = vinfo->fb_size;
+	x_axis = vinfo->x_axis;
+	y_axis = vinfo->y_axis;
+	ppsl = vinfo->ppsl;
 	next = NULL;
 	setName(name);
 }
@@ -78,7 +81,6 @@ Screen *Screen::getNext() {
 }
 
 char *Screen::setName(const char *str) {
-	while(1) __asm__("hlt");
 	strncpy(name, str, 99);
 	name[99] = '\0';
 	return name;
@@ -88,18 +90,36 @@ char *Screen::getName() {
 	return name;
 }
 
+Screen *Screen::writePixel(uint32_t x, uint32_t y, Color_t c) {
+	uint32_t index = y*this->x_axis + x;
+	uintptr_t dst = reinterpret_cast<uintptr_t>(fb+index);
+	*(uint8_t*)dst = c.b;
+	*(uint8_t*)(dst+1) = c.g;
+	*(uint8_t*)(dst+2) = c.r;
+	return this;
+}
+
+uint32_t Screen::getX() {
+	return this->x_axis;
+}
+
+uint32_t Screen::getY() {
+	return this->y_axis;
+}
+
 ScreenManager screen_manager_buf;
 Screen framebuffer_buf, backbuffer_buf;
-uint64_t back_fb[2116800];
+uint32_t back_fb[2116800];
 
-ScreenManager *InitializeScreen(video_info_t vinfo) {
-	ScreenManager *screen_manager = new(&screen_manager_buf) ScreenManager(
-			new(&framebuffer_buf) Screen(vinfo, "FrameBuffer"));
+ScreenManager *InitializeScreen(const video_info_t *vinfo) {
+	Screen *front_screen = new(&framebuffer_buf) Screen(vinfo, "FrameBuffer");
+	ScreenManager *screen_manager = 
+		new(&screen_manager_buf) ScreenManager(front_screen);
 		
 	video_info_t back_info;
-	memcpy(&back_info, &vinfo, sizeof(video_info_t));
+	memcpy(&back_info, vinfo, sizeof(video_info_t));
 	back_info.fb = back_fb;
-	Screen *back_buffer = new(&backbuffer_buf) Screen(back_info, "BackBuffer");
+	Screen *back_buffer = new(&backbuffer_buf) Screen(&back_info, "BackBuffer");
 	screen_manager->setScreen(back_buffer);
 	return screen_manager;
 }
