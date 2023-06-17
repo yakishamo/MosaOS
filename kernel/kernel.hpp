@@ -11,5 +11,6 @@ typedef struct pix_format {
 } pix_format;
 
 void printd(const char *line, ...);
+void print(const char *line, ...);
 
 #endif

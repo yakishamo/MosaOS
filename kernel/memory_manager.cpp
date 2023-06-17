@@ -1,5 +1,5 @@
 #include "kernel.hpp"
-#include "memory.hpp"
+#include "memory_manager.hpp"
 #include "memory_map.h"
 #include "screen.hpp"
 
