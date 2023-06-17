@@ -101,8 +101,6 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	bootinfo.vinfo.x_axis = (uint32_t)gop->Mode->Info->HorizontalResolution;
 	bootinfo.vinfo.y_axis = (uint32_t)gop->Mode->Info->VerticalResolution;
 	bootinfo.vinfo.ppsl = (uint32_t)gop->Mode->Info->PixelsPerScanLine;
-	Print(L"[LOG] x_axis : %d\n", bootinfo.vinfo.x_axis);
-	Print(L"[LOG] y_axis : %d\n", bootinfo.vinfo.y_axis);
 
 	//get sfsp
 	EFI_GUID sfsp_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
@@ -121,26 +119,50 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		stop();
 	}
 
+	//open font.bin
+	EFI_FILE_PROTOCOL *font_file;
+	CHAR16 *font_file_name = (CHAR16*)FONT_FILE_NAME;
+	UINT64 file_mode = (UINT64)EFI_FILE_READ_ONLY;
+	status = root->Open(root, &font_file, font_file_name, file_mode, 0);
+	if(EFI_ERROR(status)) {
+		Print(L"[ERROR] %d : open font file failed.\n", __LINE__);
+		stop();
+	}
+
+	//get font file info
+	EFI_FILE_INFO font_file_info;
+	EFI_GUID fi_guid = EFI_FILE_INFO_ID;
+	UINTN font_buf_size = BUF_256B;
+	status = font_file->GetInfo(font_file, &fi_guid, &font_buf_size, &font_file_info);
+	if(EFI_ERROR(status)) {
+		Print(L"[ERROR] %d : getting font file info failed.\n", __LINE__);
+		stop();
+	}
+	
+	UINTN font_file_size = font_file_info.FileSize;
+	uint64_t *font_buf = NULL;
+	status = gBS->AllocatePool(EfiBootServicesData, font_file_size, (void**)&font_buf);
+	status = font_file->Read(font_file, &font_file_size, font_buf);
+	bootinfo.font = font_buf;
+
 	//open kernel
 	EFI_FILE_PROTOCOL *kernel_file;
-	CHAR16 *file_name = (CHAR16*)KERNEL_FILE_NAME;
-	UINT64 file_mode = (UINT64)EFI_FILE_READ_ONLY;
-	status = root->Open(root, &kernel_file, file_name, file_mode, 0);
+	CHAR16 *kernel_file_name = (CHAR16*)KERNEL_FILE_NAME;
+	status = root->Open(root, &kernel_file, kernel_file_name, file_mode, 0);
 	if(EFI_ERROR(status)) {
 		Print(L"[error]open kernel file failed.");
 		stop();
 	}
 
 	//get kernel file info
-	EFI_FILE_INFO file_info;
-	EFI_GUID fi_guid = EFI_FILE_INFO_ID; 
-	UINTN buf_size = BUF_256B;
-	status = kernel_file->GetInfo(kernel_file, &fi_guid, &buf_size, &file_info);
+	EFI_FILE_INFO kernel_file_info;
+	UINTN kernel_buf_size = BUF_256B;
+	status = kernel_file->GetInfo(kernel_file, &fi_guid, &kernel_buf_size, &kernel_file_info);
 	if(EFI_ERROR(status)) {
 		Print(L"[error]getting kernel file info failed.");
 		stop();
 	}
-	UINTN kernel_file_size = file_info.FileSize;
+	UINTN kernel_file_size = kernel_file_info.FileSize;
 
 	uint64_t *kernel_program = NULL;
 	status = gBS->AllocatePool(EfiBootServicesData, kernel_file_size, (void **)&kernel_program);

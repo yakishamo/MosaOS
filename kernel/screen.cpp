@@ -1,8 +1,11 @@
 #include "screen.hpp"
 #include "new.hpp"
+#include "font.hpp"
 #include "../boot/boot_types.h"
 #include <cstddef>
 #include <cstring>
+
+AsciiFont *gFont = NULL;
 
 ScreenManager::ScreenManager() {
 	screens = NULL;
@@ -90,6 +93,13 @@ char *Screen::getName() {
 	return name;
 }
 
+uint32_t Screen::getX() {
+	return this->x_axis;
+}
+
+uint32_t Screen::getY() {
+	return this->y_axis;
+}
 Screen *Screen::writePixel(uint32_t x, uint32_t y, Color_t c) {
 	uint32_t index = y*this->x_axis + x;
 	uintptr_t dst = reinterpret_cast<uintptr_t>(fb+index);
@@ -99,12 +109,35 @@ Screen *Screen::writePixel(uint32_t x, uint32_t y, Color_t c) {
 	return this;
 }
 
-uint32_t Screen::getX() {
-	return this->x_axis;
+Screen *Screen::writeSquare(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, Color_t c) {
+	for(uint32_t i = x1; i <= x2; i++) {
+		for(uint32_t j = y1; j <= y2; j++) {
+			this->writePixel(i,j,c);
+		}
+	}
+	return this;
 }
 
-uint32_t Screen::getY() {
-	return this->y_axis;
+Screen *Screen::writeAscii(uint32_t x, uint32_t y, Color_t color, char c) {
+	MonoAsciiFont *font = gFont->getFont(c);
+	uint64_t hoge = 0;
+	for(unsigned int i = 0; i < 8; i++) {
+		for(unsigned int j = 0; j < 16; j++) {
+			if(font->isDraw(i,j)) {
+				this->writePixel(x+i,y+j,color);
+				hoge++;
+			}
+		}
+	}
+	return this;
+}
+
+Screen *Screen::printLine(uint32_t x, uint32_t y, Color_t c, const char *line) {
+	int len = strlen(line);
+	for(int i = 0; i < len; i++) {
+		this->writeAscii(x+i*8, y, c, line[i]);
+	}
+	return this;
 }
 
 ScreenManager screen_manager_buf;

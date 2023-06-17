@@ -6,16 +6,17 @@ const int font_num = 128;
 
 class MonoAsciiFont {
 	public:
-		MonoAsciiFont();		
-		bool isDraw(unsigned int row, unsigned int column);
+		MonoAsciiFont(uint64_t *mono_font);		
+		bool isDraw(int x, int y);
 
 	private:
-		uint8_t row[row_num];
+		unsigned char row[row_num];
 };
 
 class AsciiFont {
 	public:
-		AsciiFont(); 
+		AsciiFont(uint64_t* font_file);
+		MonoAsciiFont *getFont(int c);
 	private:
-		MonoAsciiFont **font;
+		MonoAsciiFont *font[font_num*sizeof(MonoAsciiFont)];
 };

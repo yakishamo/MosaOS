@@ -12,6 +12,7 @@ typedef struct video_info_t {
 
 typedef struct bootinfo_t {
 	video_info_t vinfo;
+	uint64_t *font;
 } bootinfo_t;
 
 #endif /* BOOT_TYPES_H */

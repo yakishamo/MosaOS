@@ -1,26 +1,31 @@
 #include "font.hpp"
 #include "new.hpp"
+#include <cstring>
 
-MonoAsciiFont::MonoAsciiFont() {
-	for(int i = 0; i < row_num; i++) {
-		row[i] = 0;
-	}
+MonoAsciiFont::MonoAsciiFont(uint64_t *mono_font) {
+	memcpy(row, mono_font, row_num);
 }
 
-bool MonoAsciiFont::isDraw(unsigned int row, unsigned int column) {
-	if(row < row_num && column < sizeof(uint8_t)) {
-		return ((this->row[row] >> (7-column)) & 1) == 1;
+bool MonoAsciiFont::isDraw(int x, int y) {
+	if(x < 8 && y < 16) {
+		if(((row[y] >> (7-x))&1) == 1){
+			return true;
+		}
+	} else {
+		while(1)__asm__("hlt");
 	}
 	return false;
 }
 
-MonoAsciiFont *font_ptr_buf[font_num];
-MonoAsciiFont font_buf[font_num];
+char mono_font_buf[font_num*sizeof(MonoAsciiFont)];
 
-AsciiFont::AsciiFont(){
-	font = new(font_ptr_buf) MonoAsciiFont*;
+AsciiFont::AsciiFont(uint64_t *font_file){
 	for(int i = 0; i < font_num; i++) {
-		font[i] = new(font_buf + i) MonoAsciiFont();
+		this->font[i] = new(reinterpret_cast<MonoAsciiFont*>(mono_font_buf) + i)
+			MonoAsciiFont(font_file + i*2);
 	}
 }
 
+MonoAsciiFont *AsciiFont::getFont(int c) {
+	return this->font[c];
+}

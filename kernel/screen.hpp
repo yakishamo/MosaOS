@@ -35,6 +35,9 @@ class Screen {
 		uint32_t getX();
 		uint32_t getY();
 		Screen *writePixel(uint32_t x, uint32_t y, Color_t c);
+		Screen *writeSquare(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, Color_t c);
+		Screen *writeAscii(uint32_t x, uint32_t y, Color_t coler, char c);
+		Screen *printLine(uint32_t x, uint32_t y, Color_t c, const char *line);
 	private:
 		char name[100];
 		uint32_t *fb;
