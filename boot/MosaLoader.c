@@ -1,4 +1,5 @@
 #include "MosaLoader.h"
+#include "memory_map.h"
 #include "elf.h"
 #include <Library/BaseMemoryLib.h>
 #include <Uefi.h>
@@ -195,10 +196,10 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 					Print(L"[ERROR] mmapsize : %lx\n", mmapsize);
 				}
 			} while(EFI_ERROR(status));
-		} else continue;
+		} else break;
 	} while(EFI_ERROR(status));
 
-	//status = 
+	status = 
 		gBS->ExitBootServices(ImageHandle, mapkey);
 	if(EFI_ERROR(status)) {
 		Print(L"[ERROR] exit boot service failed.\n");
@@ -206,6 +207,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		stop();
 	}
 
+	bootinfo.mmap = (void*)mmap;
 	Print(L"[LOG] jump_to_kernel\n");
 	Print(L"[LOG] entry : %lx\n", updated_start_addr);
 	Print(L"[LOG] *entry : %lx\n", *updated_start_addr);

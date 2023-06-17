@@ -9,6 +9,7 @@
 video_info_t *vinfo;
 extern AsciiFont *gFont;
 char font_buf[sizeof(AsciiFont)];
+Screen *gScreen = NULL;
 
 extern "C" void entry_point(bootinfo_t *binfo) {
 	vinfo = &binfo->vinfo;
@@ -22,6 +23,7 @@ extern "C" void entry_point(bootinfo_t *binfo) {
 
 	ScreenManager *screen_manager = InitializeScreen((const video_info_t *)vinfo);
 	Screen *frame = screen_manager->getScreen(0);
+	gScreen = frame;
 	uint32_t frame_x = frame->getX();
 	uint32_t frame_y = frame->getY();
 	for(uint32_t i=0; i < frame_x; i++) {
