@@ -181,26 +181,8 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	UINT32 descver;
 	EFI_MEMORY_DESCRIPTOR *mmap = NULL;
 	
-	do {
-		Print(L"[LOG] mmapsize :  %lx\n", mmapsize);
-		status = gBS->GetMemoryMap(&mmapsize, mmap, &mapkey, &descsize, &descver);
-		if(EFI_ERROR(status)) {
-			if(mmap) {
-				gBS->FreePool(mmap);
-			}
-			mmapsize += 0x1000;
-			do {
-				status = gBS->AllocatePool(EfiLoaderData, mmapsize, (void **)&mmap);
-				if(EFI_ERROR(status)) {
-					Print(L"[ERROR] AllocatePool failed.\n");
-					Print(L"[ERROR] mmapsize : %lx\n", mmapsize);
-				}
-			} while(EFI_ERROR(status));
-		} else break;
-	} while(EFI_ERROR(status));
-
-	status = 
-		gBS->ExitBootServices(ImageHandle, mapkey);
+	status = gBS->GetMemoryMap(&mmapsize, mmap, &mapkey, &descsize, &descver);
+	status = gBS->ExitBootServices(ImageHandle, mapkey);
 	if(EFI_ERROR(status)) {
 		Print(L"[ERROR] exit boot service failed.\n");
 		Print(L"[ERROR] status = %lx\n", status);
@@ -208,9 +190,6 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	}
 
 	bootinfo.mmap = (void*)mmap;
-	Print(L"[LOG] jump_to_kernel\n");
-	Print(L"[LOG] entry : %lx\n", updated_start_addr);
-	Print(L"[LOG] *entry : %lx\n", *updated_start_addr);
 	jump_to_kernel(&bootinfo, updated_start_addr);
 	return status; //jump_to_kernelから処理は返ってこないので意味はないが
 								 //return文がないとコンパイルエラーが出るため記述
