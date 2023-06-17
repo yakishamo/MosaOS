@@ -120,12 +120,10 @@ Screen *Screen::writeSquare(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, 
 
 Screen *Screen::writeAscii(uint32_t x, uint32_t y, Color_t color, char c) {
 	MonoAsciiFont *font = gFont->getFont(c);
-	uint64_t hoge = 0;
 	for(unsigned int i = 0; i < 8; i++) {
 		for(unsigned int j = 0; j < 16; j++) {
 			if(font->isDraw(i,j)) {
 				this->writePixel(x+i,y+j,color);
-				hoge++;
 			}
 		}
 	}

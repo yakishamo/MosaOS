@@ -142,7 +142,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	
 	UINTN font_file_size = font_file_info.FileSize;
 	uint64_t *font_buf = NULL;
-	status = gBS->AllocatePool(EfiBootServicesData, font_file_size, (void**)&font_buf);
+	status = gBS->AllocatePool(EfiLoaderData, font_file_size, (void**)&font_buf);
 	status = font_file->Read(font_file, &font_file_size, font_buf);
 	bootinfo.font = font_buf;
 
@@ -166,7 +166,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	UINTN kernel_file_size = kernel_file_info.FileSize;
 
 	uint64_t *kernel_program = NULL;
-	status = gBS->AllocatePool(EfiBootServicesData, kernel_file_size, (void **)&kernel_program);
+	status = gBS->AllocatePool(EfiLoaderData, kernel_file_size, (void **)&kernel_program);
 	status = kernel_file->Read(kernel_file, &kernel_file_size, kernel_program);
 	if(EFI_ERROR(status)) {
 		Print(L"[error]read kernel failed.");

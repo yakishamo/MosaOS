@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
+#include <cstdio>
 #include "../boot/boot_types.h"
 #include "kernel.hpp"
 #include "font.hpp"
@@ -11,10 +12,9 @@ video_info_t *vinfo;
 extern AsciiFont *gFont;
 char font_buf[sizeof(AsciiFont)];
 Screen *gScreen = NULL;
+alignas(16) uint8_t kernel_main_stack[1024*1024];
 
-void printd(const char *line);
-
-extern "C" void entry_point(bootinfo_t *binfo) {
+extern "C" void KernelMain(bootinfo_t *binfo) {
 	vinfo = &binfo->vinfo;
 	uint32_t x_axis = vinfo->x_axis;
 	uint32_t y_axis = vinfo->y_axis;
@@ -41,16 +41,24 @@ extern "C" void entry_point(bootinfo_t *binfo) {
 		->writeSquare(150,150,170,230,{0,0,0xff});
 
 	printd("This is Debug Message");
+	printd("No Error.");
 
 	while(1) {
 		__asm__("hlt");
 	}
 }
 
-void printd(const char *line) {
+void printd(const char *line, ...) {
+	/*
+	va_list args;
+	__builtin_va_start(args, line);
+	char str[strlen(line)+100];
+	vsprintf(str, line, args);
+	*/
 	static int y = 0;
 	gScreen->writeSquare(0,y,strlen(line)*8,y+16,{0,0,0})
 		->printLine(0,y,{0xff,0,0}, line);
 	y+=16;
+	// __builtin_va_end(args);
 	return;
 }

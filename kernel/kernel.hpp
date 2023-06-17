@@ -10,4 +10,6 @@ typedef struct pix_format {
 	uint8_t _rsvd;
 } pix_format;
 
+void printd(const char *line, ...);
+
 #endif
