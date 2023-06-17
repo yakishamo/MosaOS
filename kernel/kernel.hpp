@@ -6,7 +6,7 @@
 typedef struct pix_format {
 	uint8_t blue;
 	uint8_t green;
-	uint8_t reg;
+	uint8_t red;
 	uint8_t _rsvd;
 } pix_format;
 

@@ -3,17 +3,79 @@
 #include <Library/BaseMemoryLib.h>
 #include <Uefi.h>
 
-
 void stop() {
 	while(1) __asm__("hlt");
 }
 
-uint64_t *update_start_addr(uint64_t *start_addr) {
-	Elf64_Ehdr *elf_header = (Elf64_Ehdr *)start_addr;
-	Elf64_Shdr *section_header = (Elf64_Shdr *)((char *)elf_header + 
-			elf_header->e_shoff);
-	uint64_t updated = (uint64_t)((uintptr_t)start_addr + (uintptr_t)section_header[3].sh_offset);
-	return (uint64_t*)updated;
+int strcmp(const char *first, const char *second) {
+	int i = 0;
+	while(first[i] != '\0' && second[i] != '\0') {
+		if(first[i] != second[i]) {
+			return 1;
+		}
+		i++;
+	}
+	if(first[i] == second[i]) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+void dumpSectionHeader(Elf64_Shdr *sh, int i) {
+	Print(L"[LOG] sh_name    : %x\n", sh[i].sh_name);
+	Print(L"[LOG] sh_type    : %x\n", sh[i].sh_type);
+	Print(L"[LOG] sh_flags   : %x\n", sh[i].sh_flags);
+	Print(L"[LOG] sh_addr    : %x\n", sh[i].sh_addr);
+	Print(L"[LOG] sh_offset  : %x\n", sh[i].sh_offset);
+	Print(L"[LOG] sh_size    : %x\n", sh[i].sh_size);
+	Print(L"[LOG] sh_link    : %x\n", sh[i].sh_link);
+	Print(L"[LOG] sh_info    : %x\n", sh[i].sh_info);
+	Print(L"[LOG] sh_addralign : %x\n", sh[i].sh_addralign);
+	Print(L"[LOG] sh_entsize : %x\n", sh[i].sh_entsize);
+	return;
+}
+
+uintptr_t Allocate(uintptr_t addr, uintptr_t size) {
+	UINT64 ret = addr;
+	UINTN num_pages = (size + 0xfff) / 0x1000;
+
+	EFI_STATUS status = 1;
+	while(EFI_ERROR(status)) {
+		status = gBS->AllocatePages(AllocateAddress, EfiLoaderData,num_pages, &ret);
+		if(EFI_ERROR(status)) {
+			Print(L"[ERROR] %d:Allocate failed.\n", __LINE__);
+			Print(L"[ERROR] addr : 0x%lx\n", addr);
+			Print(L"[ERROR] size : 0x%lx\n", size);
+			Print(L"[ERROR] num_pages = %d\n", num_pages);
+			addr += 0x1000;
+		}
+	}
+	return ret;
+}
+
+uintptr_t LoadKernel(uintptr_t start_addr) {
+	Print(L"[LOG] start_addr : 0x%lx\n", start_addr);
+	Elf64_Ehdr *eh = (Elf64_Ehdr *)start_addr;
+	Elf64_Phdr *pht = (Elf64_Phdr*)((uintptr_t)start_addr + eh->e_phoff);
+	uint8_t ph_num = eh->e_phnum;
+	uintptr_t ph_size = eh->e_phentsize;
+	Print(L"[LOG] ph_num : %d\n", ph_num);
+	Print(L"[LOG] ph_size : 0x%lx\n", ph_size);
+	for(int i = 0; i < ph_num; i++) {
+		Print(L"[LOG] pht[%d].p_type = %d\n", i, pht->p_type);
+		Print(L"[LOG] pht = 0x%lx\n", pht);
+		if(pht->p_type == PT_LOAD) {
+			Allocate(pht->p_vaddr, pht->p_memsz);
+			gBS->CopyMem((void*)pht->p_vaddr, 
+					(void*)start_addr + pht->p_offset, pht->p_filesz);
+			Print(L"[LOG] dst : %lx\n",(void*)pht->p_vaddr);
+			Print(L"[LOG] src : %lx\n",(void*)start_addr+pht->p_offset);
+			Print(L"[LOG] size: %lx\n",pht->p_filesz);
+		}
+		pht = (Elf64_Phdr *)((uintptr_t)pht + ph_size);
+	}
+	return eh->e_entry;
 }
 
 EFI_STATUS
@@ -86,24 +148,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		stop();
 	}
 
-	uint64_t *start_addr = KERNEL_START_QEMU;
-	status = gBS->AllocatePages(AllocateAddress, EfiBootServicesData,
-			(kernel_file_size+0xfff)/0x1000,
-			(EFI_PHYSICAL_ADDRESS*)&start_addr);
-	if(EFI_ERROR(status)) {
-		Print(L"[ERROR] %d:failed AllocatePool for kernel.\n",__LINE__);
-		stop();
-	}
-
-	Print(L"[LOG] start_addr : %lx\n", start_addr);
-	Print(L"[LOG] kernel_program : %lx\n", kernel_program);
-	gBS->CopyMem(start_addr, kernel_program, kernel_file_size);
-	Print(L"[LOG] kernel_file_size : %d\n", kernel_file_size);
-	Print(L"[LOG] KERNEL_START_QEMU : %lx\n", KERNEL_START_QEMU);
-	Print(L"[LOG] start_addr : %lx\n", start_addr);
-	uint64_t *updated_start_addr = update_start_addr(start_addr);
-	Print(L"[LOG] updated_start_addr : %lx\n", updated_start_addr);
-	Print(L"[LOG] *updated_start_addr : %lx\n", *updated_start_addr);
+	uint64_t *updated_start_addr = (uint64_t *)LoadKernel((uintptr_t)kernel_program);
 	
 	Print(L"exit uefi\n");
 	//exit uefi
@@ -129,14 +174,17 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		} else continue;
 	} while(EFI_ERROR(status));
 
-	gBS->ExitBootServices(ImageHandle, mapkey);
+	//status = 
+		gBS->ExitBootServices(ImageHandle, mapkey);
 	if(EFI_ERROR(status)) {
-		Print(L"[ERROR]exit boot service failed.\n");
-		Print(L"[ERROR]status = %lx\n", status);
+		Print(L"[ERROR] exit boot service failed.\n");
+		Print(L"[ERROR] status = %lx\n", status);
 		stop();
 	}
 
-	Print(L"[log]jump_to_kernel\n");
+	Print(L"[LOG] jump_to_kernel\n");
+	Print(L"[LOG] entry : %lx\n", updated_start_addr);
+	Print(L"[LOG] *entry : %lx\n", *updated_start_addr);
 	jump_to_kernel(&bootinfo, updated_start_addr);
 	return status; //jump_to_kernelから処理は返ってこないので意味はないが
 								 //return文がないとコンパイルエラーが出るため記述

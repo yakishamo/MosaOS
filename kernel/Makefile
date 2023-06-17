@@ -1,21 +1,22 @@
 TARGET = kernel.elf
-CFLAGS += -g -O0 \
+CFLAGS += -g -O2 \
 					-Wall -Wextra -Wno-unused-parameter \
 					-I$(HOME)/x86_64-elf/include \
 					-I./ \
-					-fPIE \
+					-fno-PIE \
 					-fno-builtin -fno-common -fno-stack-protector \
 					-nostdlib -nostdinc \
 					-mno-red-zone
 
-CPPFLAGS = -g -O0 \
+CPPFLAGS = -g -O2 \
 					 -Wall -Wextra -Wno-unused-parameter \
 					 -I$(HOME)/x86_64-elf/include/c++/v1 \
 					 -I$(HOME)/x86_64-elf/include \
 					 -I./ \
 					 -nostdinc -nostdlib \
-					 -fPIE \
-					 -fno-builtin -fno-common -fno-stack-protector \
+					 -fno-PIE -ffreestanding \
+					 -fno-builtin -fno-common -fno-stack-protector -fno-exceptions\
+					 -fno-rtti \
 					 -mno-red-zone
 
 LDFLAGS = -Map kernel.map -e entry_point -z norelro --image-base 0x100000 -static\

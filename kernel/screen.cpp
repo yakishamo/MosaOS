@@ -58,6 +58,7 @@ Screen::Screen() {
 }
 
 Screen::Screen(video_info_t vinfo, const char *name) {
+	while(1)__asm__("hlt");
 	fb = vinfo.fb;
 	fb_size = vinfo.fb_size;
 	x_axis = vinfo.x_axis;
@@ -77,6 +78,7 @@ Screen *Screen::getNext() {
 }
 
 char *Screen::setName(const char *str) {
+	while(1) __asm__("hlt");
 	strncpy(name, str, 99);
 	name[99] = '\0';
 	return name;
@@ -91,10 +93,9 @@ Screen framebuffer_buf, backbuffer_buf;
 uint64_t back_fb[2116800];
 
 ScreenManager *InitializeScreen(video_info_t vinfo) {
-	while(1) __asm__("hlt");
 	ScreenManager *screen_manager = new(&screen_manager_buf) ScreenManager(
 			new(&framebuffer_buf) Screen(vinfo, "FrameBuffer"));
-	
+		
 	video_info_t back_info;
 	memcpy(&back_info, &vinfo, sizeof(video_info_t));
 	back_info.fb = back_fb;

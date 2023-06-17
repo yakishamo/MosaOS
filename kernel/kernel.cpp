@@ -13,6 +13,11 @@ extern "C" void entry_point(bootinfo_t *binfo) {
 	uint32_t y_axis = vinfo->y_axis;
 	uint32_t ppsl = binfo->vinfo.ppsl;
 	pix_format *fb = (pix_format*)binfo->vinfo.fb;
+	uint32_t fb_size = vinfo->fb_size;
+
+	for(int i = 0; i < fb_size; i++) {
+		((uint8_t*)fb)[i] = 0xff;
+	}
 
 	ScreenManager *screen_manager = InitializeScreen(*vinfo);
 	//Screen *frame = screen_manager->getScreen(0);
