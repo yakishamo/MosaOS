@@ -62,9 +62,13 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 		new(reinterpret_cast<BitmapMemoryManager*>(memory_manager_buf)) BitmapMemoryManager;
 	const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map->buffer);
 	uintptr_t available_end = 0;
+	unsigned int num_memdesc = memory_map->map_size / memory_map-> descriptor_size;
+	/*
 	for(uintptr_t iter = memory_map_base;
 			iter < memory_map_base + memory_map->map_size;
-			iter += memory_map->descriptor_size) {
+			iter += memory_map->descriptor_size) { */
+	uintptr_t iter = memory_map_base;
+	for(unsigned int i=0; i < num_memdesc; i++ ) {
 		auto desc = reinterpret_cast<const MemoryDescriptor_t*>(iter);
 		if(available_end < desc->physical_start) {
 			gMemoryManager->MarkAllocated(
@@ -76,12 +80,16 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 			desc->physical_start + desc->number_of_pages * kUEFIPageSize;
 		if(IsAvailable(static_cast<MemoryType_t>(desc->type))) {
 			available_end = physical_end;
+			print("available");
 		} else {
+			print("un-available");
 			gMemoryManager->MarkAllocated(
 					FrameID{desc->physical_start / kBytesPerFrame},
 					desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
 		}
+		iter += memory_map->descriptor_size;
 	}
+	printd("for loop finished.");
 	gMemoryManager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
 	print("finished.");
 		
@@ -120,15 +128,14 @@ void printd(const char *line, ...) {
 }
 
 void print(const char *line, ...) {
-	/*
-	va_list args;
-	__builtin_va_start(args, line);
-	char str[strlen(line)+100];
-	vsprintf(str, line, args);
-	*/
 	static int y = 0;
-	gScreen->printLine(0,y,{0,0,0}, line);
+	static uint8_t c = 0;
+	gScreen->writeSquare(0,y,strlen(line)*8, y+16, {0xff,0xff,0xff})
+		->printLine(0,y,{c,0,0}, line);
 	y+=16;
-	// __builtin_va_end(args);
+	if(y > gScreen->getY()) {
+		y = 0;
+		c += 0x10;
+	}
 	return;
 }

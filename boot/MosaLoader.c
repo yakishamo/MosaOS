@@ -39,40 +39,52 @@ void dumpSectionHeader(Elf64_Shdr *sh, int i) {
 
 uintptr_t Allocate(uintptr_t addr, uintptr_t size) {
 	UINT64 ret = addr;
+	int tmp = 0;
 	UINTN num_pages = (size + 0xfff) / 0x1000;
 
-	EFI_STATUS status = 1;
-	while(EFI_ERROR(status)) {
-		status = gBS->AllocatePages(AllocateAddress, EfiLoaderData,num_pages, &ret);
+	EFI_STATUS status;
+	do {
+		tmp++;
+		ret = (ret/0x1000)*0x1000;
+		status = gBS->AllocatePages(AllocateAddress, EfiLoaderData, num_pages, &ret);
+		//Print(L"[LOG] EfiLoaderData : %d\n", EfiLoaderData);
+		//Print(L"[LOG] ret : %lx\n", ret);
+		//Print(L"[LOG] num_pages : %d\n", num_pages);
 		if(EFI_ERROR(status)) {
-			Print(L"[ERROR] %d:Allocate failed.\n", __LINE__);
-			Print(L"[ERROR] addr : 0x%lx\n", addr);
-			Print(L"[ERROR] size : 0x%lx\n", size);
-			Print(L"[ERROR] num_pages = %d\n", num_pages);
-			addr += 0x1000;
+			//Print(L"[ERROR] status : %lx\n", status);
+			//Print(L"[ERROR] %d:Allocate failed.\n", __LINE__);
+			//Print(L"[ERROR] addr : 0x%lx\n", addr);
+			//Print(L"[ERROR] size : 0x%lx\n", size);
+			//Print(L"[ERROR] num_pages = %d\n", num_pages);
+			ret += 0x1000;
+			size -= 0x1000;
+			num_pages = (size+0xfff) / 0x1000;
+			if(tmp == 10000){
+				Print(L"[ERROR] status : %lx\n", status);
+				Print(L"[ERROR] %d:Allocate failed.\n", __LINE__);
+				Print(L"[ERROR] addr : 0x%lx\n", ret);
+				Print(L"[ERROR] size : 0x%lx\n", size);
+				Print(L"[ERROR] num_pages = %d\n", num_pages);
+				while(1) __asm__("hlt");
+			}
 		}
-	}
+	}while(EFI_ERROR(status) && size < 0xffffffffffff0000);
 	return ret;
 }
 
 uintptr_t LoadKernel(uintptr_t start_addr) {
-	Print(L"[LOG] start_addr : 0x%lx\n", start_addr);
 	Elf64_Ehdr *eh = (Elf64_Ehdr *)start_addr;
 	Elf64_Phdr *pht = (Elf64_Phdr*)((uintptr_t)start_addr + eh->e_phoff);
 	uint8_t ph_num = eh->e_phnum;
 	uintptr_t ph_size = eh->e_phentsize;
-	Print(L"[LOG] ph_num : %d\n", ph_num);
-	Print(L"[LOG] ph_size : 0x%lx\n", ph_size);
 	for(int i = 0; i < ph_num; i++) {
-		Print(L"[LOG] pht[%d].p_type = %d\n", i, pht->p_type);
-		Print(L"[LOG] pht = 0x%lx\n", pht);
 		if(pht->p_type == PT_LOAD) {
+			Print(L"[LOG] p_memsz = 0x%lx\n", pht->p_memsz);
+			Print(L"[LOG] p_type = %d\n", pht->p_type);
+			Print(L"[LOG] i = %d\n", i);
 			Allocate(pht->p_vaddr, pht->p_memsz);
 			gBS->CopyMem((void*)pht->p_vaddr, 
 					(void*)start_addr + pht->p_offset, pht->p_filesz);
-			Print(L"[LOG] dst : %lx\n",(void*)pht->p_vaddr);
-			Print(L"[LOG] src : %lx\n",(void*)start_addr+pht->p_offset);
-			Print(L"[LOG] size: %lx\n",pht->p_filesz);
 		}
 		pht = (Elf64_Phdr *)((uintptr_t)pht + ph_size);
 	}
@@ -179,21 +191,20 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	//exit uefi
 	CHAR8 memmap_buf[4096*4];
 	MemoryMap_t mmap={sizeof(memmap_buf), memmap_buf, 0,0,0,0};
-	mmap.map_size = mmap.buffer_size;
 	
-	status = gBS->GetMemoryMap(&mmap.buffer_size, 
+	status = gBS->GetMemoryMap(&mmap.buffer_size,
 			mmap.buffer,
 			&mmap.map_key, 
 			&mmap.descriptor_size, 
 			&mmap.descriptor_version);
 
+	mmap.map_size = mmap.buffer_size;
 	status = gBS->ExitBootServices(ImageHandle, mmap.map_key);
 	if(EFI_ERROR(status)) {
 		Print(L"[ERROR] exit boot service failed.\n");
 		Print(L"[ERROR] status = %lx\n", status);
 		stop();
 	}
-
 	bootinfo.mmap = &mmap;
 	jump_to_kernel(&bootinfo, updated_start_addr);
 	return status; //jump_to_kernelから処理は返ってこないので意味はないが
