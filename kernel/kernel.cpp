@@ -14,6 +14,7 @@
 #include "paging.hpp"
 #include "memory_manager.hpp"
 #include "memory_map.hpp"
+#include "interrupt.hpp"
 
 video_info_t *vinfo;
 extern AsciiFont *gFont;
@@ -57,6 +58,11 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 	SetupIdentityPageTable();
 	print("finished.");
 
+	print("init interrupt");
+	InitializeInterrupt();
+	print("finished.");
+	__asm__("int3");
+
 	print("Setup Memory Manager.");
 	::gMemoryManager = 
 		new(reinterpret_cast<BitmapMemoryManager*>(memory_manager_buf)) BitmapMemoryManager;
@@ -80,7 +86,7 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 			desc->physical_start + desc->number_of_pages * kUEFIPageSize;
 		if(IsAvailable(static_cast<MemoryType_t>(desc->type))) {
 			available_end = physical_end;
-			print("available");
+			//print("available");
 		} else {
 			print("un-available");
 			gMemoryManager->MarkAllocated(

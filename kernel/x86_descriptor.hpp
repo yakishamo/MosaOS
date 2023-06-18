@@ -6,7 +6,7 @@ enum class DescriptorType {
 	kTSSAvailable = 9,
 	kTSSBusy = 11,
 	kCallGate = 12,
-	kInterrupt = 14,
+	kInterruptGate = 14,
 	kTrapGate = 15,
 
 	kReadWrite = 2,

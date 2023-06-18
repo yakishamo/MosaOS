@@ -23,7 +23,7 @@ LDFLAGS = -Map kernel.map -e entry_point -z norelro --image-base 0x100000 -stati
 					-L$(HOME)/x86_64-elf/lib/ -lc -lc++
 
 OBJS = kernel.o font.o screen.o new.o asmfunc.o segment.o paging.o \
-			 memory_manager.o newlib_support.o
+			 memory_manager.o newlib_support.o interrupt.o
 
 .PHONY: clean
 

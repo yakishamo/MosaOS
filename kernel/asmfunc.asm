@@ -48,3 +48,20 @@ SetCR3:
 	mov cr3, rdi
 	ret
 
+global LoadIDT ; void LoadIDT(uint16_t limit, uint64_t offset);
+LoadIDT:
+	push rbp
+	mov rbp, rsp
+	sub rsp, 10
+	mov [rsp], di
+	mov [rsp+2], rsi
+	lidt [rsp]
+	mov rsp, rbp
+	pop rbp
+	ret
+
+global GetCS ; uint16_t getCS(void);
+GetCS:
+	xor eax, eax
+	mov ax, cs
+	ret
