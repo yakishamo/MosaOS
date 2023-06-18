@@ -1,15 +1,19 @@
 #pragma once
-#include "memory_map.h"
+#include "memory_map.hpp"
+#include <limits>
+#include "error.hpp"
 
 namespace{
 	constexpr unsigned long long operator""_KiB(unsigned long long kib) {
 		return kib*1024;
 	}
+
 	constexpr unsigned long long operator""_MiB(unsigned long long mib) {
 		return mib*1024_KiB;
 	}
+
 	constexpr unsigned long long operator""_GiB(unsigned long long gib) {
-		return gib*1024_GiB;
+		return gib*1024_MiB;
 	}
 }
 
@@ -18,7 +22,7 @@ static const auto kBytesPerFrame{4_KiB};
 class FrameID {
 	public:
 		explicit FrameID(size_t id) : id_{id}{}
-		size_t ID() const { return id_ }
+		size_t ID() const { return id_; }
 		void *Frame() const {return reinterpret_cast<void*>(id_ * kBytesPerFrame);}
 
 	private:
@@ -27,19 +31,29 @@ class FrameID {
 
 static const FrameID kNullFrame{std::numeric_limits<size_t>::max()};
 
-inline bool IsAvailable(MemoryType_t memory_type) {
-	return
-		memory_type == kEfiBootServicesCode ||
-		memory_type == kEfiBootServicesData ||
-		memory_type == kEfiConventionalMemory;
-}
-
-const int kUefiPageSize = 4096;
-
-class MemoryManager{
+class BitmapMemoryManager{
 	public:
-		MemoryManager(MemoryMap_t *mmap);
+		static const auto kMaxPhysicalMemoryBytes{128_GiB};
+		static const auto kFrameCount{kMaxPhysicalMemoryBytes / kBytesPerFrame};
+		
+		using MapLineType = unsigned long;
+		static const size_t kBitsPerMapLine{8 * sizeof(MapLineType)};
+
+		BitmapMemoryManager();
+
+		WithError<FrameID> Allocate(size_t num_frames);
+		Error Free(FrameID start_frame, size_t num_frames);
+		void MarkAllocated(FrameID start_frame, size_t num_frames);
+
+		void SetMemoryRange(FrameID range_begin, FrameID range_end);
+
 	private:
-		MemoryMap_t *mmap;
-		MemoryDescriptor *memdesc;
-}
+		MapLineType alloc_map_[kFrameCount / kBitsPerMapLine];
+		FrameID range_begin_;
+		FrameID range_end_;
+
+		bool GetBit(FrameID frame) const;
+		void SetBit(FrameID frame, bool allocated);
+};
+
+Error InitializeHeap(BitmapMemoryManager& memory_manager);

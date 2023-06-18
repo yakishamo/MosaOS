@@ -1,3 +1,5 @@
+#define MEMORY_MAP_H
+
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
@@ -10,16 +12,21 @@
 #include "new.hpp"
 #include "segment.hpp"
 #include "paging.hpp"
+#include "memory_manager.hpp"
+#include "memory_map.hpp"
 
 video_info_t *vinfo;
 extern AsciiFont *gFont;
 char font_buf[sizeof(AsciiFont)];
 Screen *gScreen = NULL;
 alignas(16) uint8_t kernel_main_stack[1024*1024];
+BitmapMemoryManager *gMemoryManager;
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
 
 extern "C" void KernelMain(bootinfo_t *binfo) {
 	vinfo = &binfo->vinfo;
 	gFont = new(font_buf) AsciiFont(binfo->font);
+	const MemoryMap *memory_map = binfo->mmap;
 
 	ScreenManager *screen_manager = InitializeScreen((const video_info_t *)vinfo);
 	Screen *frame = screen_manager->getScreen(0);
@@ -48,6 +55,48 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 
 	print("Setup Paging.");
 	SetupIdentityPageTable();
+	print("finished.");
+
+	print("Setup Memory Manager.");
+	::gMemoryManager = 
+		new(reinterpret_cast<BitmapMemoryManager*>(memory_manager_buf)) BitmapMemoryManager;
+	const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map->buffer);
+	uintptr_t available_end = 0;
+	for(uintptr_t iter = memory_map_base;
+			iter < memory_map_base + memory_map->map_size;
+			iter += memory_map->descriptor_size) {
+		auto desc = reinterpret_cast<const MemoryDescriptor_t*>(iter);
+		if(available_end < desc->physical_start) {
+			gMemoryManager->MarkAllocated(
+					FrameID{available_end / kBytesPerFrame},
+					(desc->physical_start - available_end) / kBytesPerFrame);
+		}
+
+		const auto physical_end = 
+			desc->physical_start + desc->number_of_pages * kUEFIPageSize;
+		if(IsAvailable(static_cast<MemoryType_t>(desc->type))) {
+			available_end = physical_end;
+		} else {
+			gMemoryManager->MarkAllocated(
+					FrameID{desc->physical_start / kBytesPerFrame},
+					desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
+		}
+	}
+	gMemoryManager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
+	print("finished.");
+		
+	if(available_end/kBytesPerFrame > 64) {
+		print("over 64");
+	} else {
+		print("less than 64");
+	}
+
+	print("init heap.");
+	if(auto err = InitializeHeap(*gMemoryManager)) {
+		printd("InitializeHeap failed.");
+		printd(err.Name());
+		while(1) __asm__("hlt");
+	}
 	print("finished.");
 
 	while(1) {

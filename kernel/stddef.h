@@ -8,7 +8,7 @@ typedef __SIZE_TYPE__ size_t;
 
 typedef __PTRDIFF_TYPE__ ptrdiff_t;
 
-#if defined(_WCHAR_T) && !defined(__cplusplus)
+#if !defined(_WCHAR_T) && !defined(__cplusplus)
 #define _WCHAR_T
 typedef __WCHAR_TYPE__ wchar_t;
 #endif

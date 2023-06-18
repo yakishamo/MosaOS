@@ -177,19 +177,24 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	
 	Print(L"exit uefi\n");
 	//exit uefi
-	UINTN mmapsize = 0, mapkey, descsize;
-	UINT32 descver;
-	EFI_MEMORY_DESCRIPTOR *mmap = NULL;
+	CHAR8 memmap_buf[4096*4];
+	MemoryMap_t mmap={sizeof(memmap_buf), memmap_buf, 0,0,0,0};
+	mmap.map_size = mmap.buffer_size;
 	
-	status = gBS->GetMemoryMap(&mmapsize, mmap, &mapkey, &descsize, &descver);
-	status = gBS->ExitBootServices(ImageHandle, mapkey);
+	status = gBS->GetMemoryMap(&mmap.buffer_size, 
+			mmap.buffer,
+			&mmap.map_key, 
+			&mmap.descriptor_size, 
+			&mmap.descriptor_version);
+
+	status = gBS->ExitBootServices(ImageHandle, mmap.map_key);
 	if(EFI_ERROR(status)) {
 		Print(L"[ERROR] exit boot service failed.\n");
 		Print(L"[ERROR] status = %lx\n", status);
 		stop();
 	}
 
-	bootinfo.mmap = (void*)mmap;
+	bootinfo.mmap = &mmap;
 	jump_to_kernel(&bootinfo, updated_start_addr);
 	return status; //jump_to_kernelから処理は返ってこないので意味はないが
 								 //return文がないとコンパイルエラーが出るため記述

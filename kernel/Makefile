@@ -22,7 +22,8 @@ CPPFLAGS = -g -O0 \
 LDFLAGS = -Map kernel.map -e entry_point -z norelro --image-base 0x100000 -static\
 					-L$(HOME)/x86_64-elf/lib/ -lc -lc++
 
-OBJS = kernel.o font.o screen.o new.o asmfunc.o segment.o paging.o
+OBJS = kernel.o font.o screen.o new.o asmfunc.o segment.o paging.o \
+			 memory_manager.o newlib_support.o
 
 .PHONY: clean
 
@@ -31,6 +32,9 @@ $(TARGET): $(OBJS)
 
 %.o: %.cpp
 	clang++ $(CPPFLAGS) -c -o $@ $<
+
+%.o: %.c
+	clang $(CFLAGS) -c -o $@ $<
 
 %.o: %.asm Makefile
 	nasm -f elf64 -o $@ $<

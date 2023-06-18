@@ -1,5 +1,4 @@
-#ifndef MEMORY_MAP_H
-#define MEMORY_MAP_H
+#pragma once
 
 typedef struct MemoryMap {
 	unsigned long long buffer_size;
@@ -14,7 +13,7 @@ typedef struct MemoryDescriptor {
 	uint32_t type;
 	uintptr_t physical_start;
 	uintptr_t virtual_start;
-	uint64_t number_of_page;
+	uint64_t number_of_pages;
 	uint64_t attribute;
 } MemoryDescriptor_t;
 
@@ -46,7 +45,15 @@ inline bool operator==(MemoryType lhs, uint32_t rhs) {
 	return rhs == lhs;
 }
 
+inline bool IsAvailable(MemoryType_t memory_type) {
+	return
+		memory_type == MemoryType_t::kEfiBootServicesCode ||
+		memory_type == MemoryType_t::kEfiBootServicesData ||
+		memory_type == MemoryType_t::kEfiConventionalMemory;
+}
+
+const int kUEFIPageSize = 4096;
+
 #endif /* __cplusplus */
 
 
-#endif /* MEMORY_MAP_H */

@@ -4,6 +4,8 @@
 #include "memory_map.h"
 #include <stdint.h>
 
+typedef struct MemoryMap MemoryMap_t;
+
 typedef struct video_info_t {
 	uint32_t *fb;
 	uint64_t fb_size;
