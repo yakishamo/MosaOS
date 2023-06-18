@@ -132,6 +132,7 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		stop();
 	}
 
+
 	//open font.bin
 	EFI_FILE_PROTOCOL *font_file;
 	CHAR16 *font_file_name = (CHAR16*)FONT_FILE_NAME;
@@ -157,6 +158,31 @@ UefiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	status = gBS->AllocatePool(EfiLoaderData, font_file_size, (void**)&font_buf);
 	status = font_file->Read(font_file, &font_file_size, font_buf);
 	bootinfo.font = font_buf;
+
+	//open mosa.bmp
+	EFI_FILE_PROTOCOL *bmp_file;
+	CHAR16 *bmp_file_name = L"mosa.bmp";
+	status = root->Open(root, &bmp_file, bmp_file_name, file_mode, 0);
+	if(EFI_ERROR(status)) {
+		Print(L"[ERROR] %d : open bmp file failed.\n", __LINE__);
+		stop();
+	}
+
+	//get bmp file info
+	EFI_FILE_INFO bmp_file_info;
+	UINTN bmp_buf_size = BUF_256B;
+	status = bmp_file->GetInfo(bmp_file, &fi_guid, &bmp_buf_size, &bmp_file_info);
+	if(EFI_ERROR(status)) {
+		Print(L"[ERROR] %d : getting bmp file info failed.\n", __LINE__);
+		stop();
+	}
+	
+	UINTN bmp_file_size = bmp_file_info.FileSize;
+	uint64_t *bmp_buf = NULL;
+	status = gBS->AllocatePool(EfiLoaderData, bmp_file_size, (void**)&bmp_buf);
+	status = bmp_file->Read(bmp_file, &bmp_file_size, bmp_buf);
+	bootinfo.bmp = bmp_buf;
+
 
 	//open kernel
 	EFI_FILE_PROTOCOL *kernel_file;

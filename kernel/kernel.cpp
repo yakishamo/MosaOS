@@ -15,6 +15,7 @@
 #include "memory_manager.hpp"
 #include "memory_map.hpp"
 #include "interrupt.hpp"
+#include "bmp.hpp"
 
 video_info_t *vinfo;
 extern AsciiFont *gFont;
@@ -23,6 +24,7 @@ Screen *gScreen = NULL;
 alignas(16) uint8_t kernel_main_stack[1024*1024];
 BitmapMemoryManager *gMemoryManager;
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
+char bmp_buf[sizeof(BitMapImage)];
 
 extern "C" void KernelMain(bootinfo_t *binfo) {
 	vinfo = &binfo->vinfo;
@@ -61,7 +63,14 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 	print("init interrupt");
 	InitializeInterrupt();
 	print("finished.");
+
+	print("print Mosa.bmp");
+	frame->printBmp(200,200,
+			new(bmp_buf) BitMapImage(reinterpret_cast<uintptr_t>(binfo->bmp)));
+
 	__asm__("int3");
+
+////////////////////////////////////////////////////////////////////////////////////////////
 
 	print("Setup Memory Manager.");
 	::gMemoryManager = 

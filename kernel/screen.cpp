@@ -1,4 +1,5 @@
 #include "screen.hpp"
+#include "bmp.hpp"
 #include "new.hpp"
 #include "font.hpp"
 #include "../boot/boot_types.h"
@@ -134,6 +135,17 @@ Screen *Screen::printLine(uint32_t x, uint32_t y, Color_t c, const char *line) {
 	int len = strlen(line);
 	for(int i = 0; i < len; i++) {
 		this->writeAscii(x+i*8, y, c, line[i]);
+	}
+	return this;
+}
+
+Screen *Screen::printBmp(uint32_t x, uint32_t y, BitMapImage *bmp) {
+	for(int i = 0; i < bmp->getWidth(); i++) {
+		for(int j = 0; j < bmp->getHeight(); j++) {
+			Color_t c = bmp->getColor(i,j);
+			while(1)__asm__("hlt");
+			writePixel(i+x,j+y,c);
+		}
 	}
 	return this;
 }

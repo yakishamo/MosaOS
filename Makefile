@@ -4,6 +4,7 @@ run:
 	sudo cp ./MosaLoader.efi ./mnt/EFI/BOOT/BOOTX64.efi
 	sudo cp kernel/kernel.elf .
 	sudo cp ./kernel.elf ./mnt/
+	sudo cp ./mosa.bmp ./mnt/
 	sudo cp ./font/hankaku ./mnt/font.bin
 	sudo umount mnt
 	qemu-system-x86_64 \

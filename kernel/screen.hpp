@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "../boot/boot_types.h"
+#include "screen.hpp"
 
 class Screen;
 
@@ -10,6 +11,8 @@ typedef struct {
 	uint8_t g;
 	uint8_t b;
 } __attribute__((packed)) Color_t;
+
+#include "bmp.hpp"
 
 typedef void (*WritePixel_t)(uint32_t x, uint32_t y, Color_t c);
 
@@ -38,6 +41,7 @@ class Screen {
 		Screen *writeSquare(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, Color_t c);
 		Screen *writeAscii(uint32_t x, uint32_t y, Color_t coler, char c);
 		Screen *printLine(uint32_t x, uint32_t y, Color_t c, const char *line);
+		Screen *printBmp(uint32_t x, uint32_t y, BitMapImage *bmp);
 	private:
 		char name[100];
 		uint32_t *fb;
