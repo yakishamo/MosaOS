@@ -143,7 +143,6 @@ Screen *Screen::printBmp(uint32_t x, uint32_t y, BitMapImage *bmp) {
 	for(int i = 0; i < bmp->getWidth(); i++) {
 		for(int j = 0; j < bmp->getHeight(); j++) {
 			Color_t c = bmp->getColor(i,j);
-			while(1)__asm__("hlt");
 			writePixel(i+x,j+y,c);
 		}
 	}

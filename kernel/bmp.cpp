@@ -4,7 +4,7 @@
 
 BitMapImage::BitMapImage(uintptr_t file) {
 	head = reinterpret_cast<BMHeader*>(file);
-	image = reinterpret_cast<uint8_t*>(head->bfOffBits);
+	image = reinterpret_cast<uint8_t*>(file + head->bfOffBits);
 	info = reinterpret_cast<BMInfo*>(file + sizeof(BMHeader));
 	width = info->bcWidth;
 	if(info->bcHeight < 0) {
@@ -18,12 +18,12 @@ BitMapImage::BitMapImage(uintptr_t file) {
 
 Color_t BitMapImage::getColor(int x, int y) {
 	int index = 0;
-	if(isAscend) {
+	if(!isAscend) {
 		index = width*(height-y-1)+x;
-		index *= 4;
+		index *= info->bcBitCount/8;
 	} else {
 		index = width*y+x+1;
-		index *= 4;
+		index *= info->bcBitCount/8;
 	}
 	Color_t c = {image[index+2], image[index+1], image[index]};
 	return c;
