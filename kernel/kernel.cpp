@@ -33,16 +33,16 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 
 	ScreenManager *screen_manager = InitializeScreen((const video_info_t *)vinfo);
 	Screen *frame = screen_manager->getScreen(0);
-	gScreen = frame;
+	gScreen = screen_manager->getScreen(1);
 	uint32_t frame_x = frame->getX();
 	uint32_t frame_y = frame->getY();
 	for(uint32_t i=0; i < frame_x; i++) {
 		for(uint32_t j=0; j < frame_y; j++) {
-			frame->writePixel(i, j, {0xff, 0xff, 0xff});
+			gScreen->writePixel(i,j,{0xff, 0xff, 0xff});
 		}
 	}
 
-	frame->writeSquare(100,100,200,200,{0,0xff,0})
+	gScreen->writeSquare(100,100,200,200,{0,0xff,0})
 		->writeSquare(150,150,170,230,{0,0,0xff});
 
 	print("Hello, World!!");
@@ -65,25 +65,19 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 	print("finished.");
 
 	print("print Mosa.bmp");
-	frame->printBmp(200,200,
+	gScreen->printBmp(200,200,
 			new(bmp_buf) BitMapImage(reinterpret_cast<uintptr_t>(binfo->bmp)));
 
-	__asm__("int3");
-
-////////////////////////////////////////////////////////////////////////////////////////////
+	copyScreen(frame, gScreen);
 
 	print("Setup Memory Manager.");
 	::gMemoryManager = 
-		new(reinterpret_cast<BitmapMemoryManager*>(memory_manager_buf)) BitmapMemoryManager;
+		new(reinterpret_cast<BitmapMemoryManager*>(memory_manager_buf)) BitmapMemoryManager();
 	const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map->buffer);
 	uintptr_t available_end = 0;
-	unsigned int num_memdesc = memory_map->map_size / memory_map-> descriptor_size;
-	/*
 	for(uintptr_t iter = memory_map_base;
 			iter < memory_map_base + memory_map->map_size;
-			iter += memory_map->descriptor_size) { */
-	uintptr_t iter = memory_map_base;
-	for(unsigned int i=0; i < num_memdesc; i++ ) {
+			iter += memory_map->descriptor_size) { 
 		auto desc = reinterpret_cast<const MemoryDescriptor_t*>(iter);
 		if(available_end < desc->physical_start) {
 			gMemoryManager->MarkAllocated(
@@ -127,6 +121,7 @@ extern "C" void KernelMain(bootinfo_t *binfo) {
 	}
 }
 
+__attribute__((no_caller_saved_registers))
 void printd(const char *line, ...) {
 	/*
 	va_list args;

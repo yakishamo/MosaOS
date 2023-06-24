@@ -44,6 +44,8 @@ constexpr InterruptDescriptorAttribute MakeIDTAttr(
 	return attr;
 }
 
-void NotifyEndOfInterrupt();
-void InitializeInterrupt();
 
+__attribute__((no_caller_saved_registers))
+void NotifyEndOfInterrupt();
+
+void InitializeInterrupt();

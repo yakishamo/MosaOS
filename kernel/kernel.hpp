@@ -10,7 +10,9 @@ typedef struct pix_format {
 	uint8_t _rsvd;
 } pix_format;
 
+__attribute__((no_caller_saved_registers))
 void printd(const char *line, ...);
+
 void print(const char *line, ...);
 
 #endif

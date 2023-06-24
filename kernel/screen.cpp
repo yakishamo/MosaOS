@@ -55,6 +55,7 @@ Screen *ScreenManager::getLast() {
 	return ptr;
 }
 
+// ***Screen***
 Screen::Screen() {
 	fb = NULL;
 	fb_size = 0;
@@ -64,7 +65,6 @@ Screen::Screen() {
 	next = NULL;
 }
 
-// ***Screen***
 Screen::Screen(const video_info_t *vinfo, const char *name) {
 	fb = vinfo->fb;
 	fb_size = vinfo->fb_size;
@@ -140,13 +140,32 @@ Screen *Screen::printLine(uint32_t x, uint32_t y, Color_t c, const char *line) {
 }
 
 Screen *Screen::printBmp(uint32_t x, uint32_t y, BitMapImage *bmp) {
-	for(int i = 0; i < bmp->getWidth(); i++) {
-		for(int j = 0; j < bmp->getHeight(); j++) {
+	for(int i = 0; i < static_cast<int>(bmp->getWidth()); i++) {
+		for(int j = 0; j < static_cast<int>(bmp->getHeight()); j++) {
 			Color_t c = bmp->getColor(i,j);
 			writePixel(i+x,j+y,c);
 		}
 	}
 	return this;
+}
+
+uint32_t *Screen::getFb() {
+	return fb;
+}
+
+uint64_t Screen::getFbsize() {
+	return fb_size;
+}
+
+Screen *copyScreen(Screen *dst, Screen *src) {
+	uint32_t *dst_fb = dst->getFb();
+	uint32_t *src_fb = src->getFb();
+	uint64_t size = dst->getFbsize();
+	if(size != src->getFbsize()) {
+		return dst;
+	}
+	memcpy(dst_fb, src_fb, size);
+	return dst;
 }
 
 ScreenManager screen_manager_buf;

@@ -22,6 +22,7 @@ class ScreenManager {
 		ScreenManager(Screen *s);
 		Screen *getScreen(int index);
 		Screen *setScreen(Screen *s);
+		bool copyScreen(Screen *dst, Screen *src);
 	private:
 		Screen *screens;
 		Screen *getLast();
@@ -42,6 +43,8 @@ class Screen {
 		Screen *writeAscii(uint32_t x, uint32_t y, Color_t coler, char c);
 		Screen *printLine(uint32_t x, uint32_t y, Color_t c, const char *line);
 		Screen *printBmp(uint32_t x, uint32_t y, BitMapImage *bmp);
+		uint32_t *getFb();
+		uint64_t getFbsize();
 	private:
 		char name[100];
 		uint32_t *fb;
@@ -52,4 +55,5 @@ class Screen {
 		Screen *next;
 };
 
+Screen *copyScreen(Screen *dst, Screen *src);
 ScreenManager *InitializeScreen(const video_info_t *vinfo);
